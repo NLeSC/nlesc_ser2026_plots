@@ -26,7 +26,7 @@ full_name: Gijs van den Oord
 github_organization: NLeSC
 keywords: dashboard, business information
 license: Apachev2
-package_name: nlesc_mdash
+package_name: nlesc_ser2026_plots
 package_short_description: Dashboard displaying business control information for the
     Netherlands eScience Center
 template_profile: recommended

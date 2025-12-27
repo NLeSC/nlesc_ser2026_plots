@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
-SPHINXPROJ    = nlesc_mdash
+SPHINXPROJ    = nlesc_ser2026_plots
 SOURCEDIR     = .
 BUILDDIR      = _build
 

@@ -1,4 +1,4 @@
-"""Documentation about the nlesc_mdash module."""
+"""Documentation about the nlesc_ser2026_plots module."""
 
 
 # FIXME: put actual code here
@@ -19,7 +19,7 @@ def hello(name: str) -> str:
     Example:
         This function can be called with `Jane Smith` as argument using
 
-        >>> from nlesc_mdash.my_module import hello
+        >>> from nlesc_ser2026_plots.my_module import hello
         >>> hello('Jane Smith')
         'Hello Jane Smith!'
 

@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = u"nlesc_mdash"
+project = u"nlesc_ser2026_plots"
 copyright = u"2025-07-25 15:57:24, Gijs van den Oord"
 author = u"Gijs van den Oord"
 
@@ -61,7 +61,7 @@ todo_include_todos = False
 
 # -- Use autoapi.extension to run sphinx-apidoc -------
 
-autoapi_dirs = ['../src/nlesc_mdash']
+autoapi_dirs = ['../src/nlesc_ser2026_plots']
 
 # -- Options for HTML output ----------------------------------------------
 

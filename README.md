@@ -4,17 +4,17 @@
 
 | fair-software.eu recommendations | |
 | :-- | :--  |
-| (1/5) code repository              | [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/NLeSC/nlesc_mdash) |
-| (2/5) license                      | [![github license badge](https://img.shields.io/github/license/NLeSC/nlesc_mdash)](https://github.com/NLeSC/nlesc_mdash) |
-| (3/5) community registry           | [![RSD](https://img.shields.io/badge/rsd-nlesc_mdash-00a3e3.svg)](https://www.research-software.nl/software/nlesc_mdash) [![workflow pypi badge](https://img.shields.io/pypi/v/nlesc_mdash.svg?colorB=blue)](https://pypi.python.org/project/nlesc_mdash/) |
+| (1/5) code repository              | [![github repo badge](https://img.shields.io/badge/github-repo-000.svg?logo=github&labelColor=gray&color=blue)](https://github.com/NLeSC/nlesc_ser2026_plots) |
+| (2/5) license                      | [![github license badge](https://img.shields.io/github/license/NLeSC/nlesc_ser2026_plots)](https://github.com/NLeSC/nlesc_ser2026_plots) |
+| (3/5) community registry           | [![RSD](https://img.shields.io/badge/rsd-nlesc_ser2026_plots-00a3e3.svg)](https://www.research-software.nl/software/nlesc_ser2026_plots) [![workflow pypi badge](https://img.shields.io/pypi/v/nlesc_ser2026_plots.svg?colorB=blue)](https://pypi.python.org/project/nlesc_ser2026_plots/) |
 | (4/5) citation                     | |
 | (5/5) checklist                    | [![workflow cii badge](https://bestpractices.coreinfrastructure.org/projects/<replace-with-created-project-identifier>/badge)](https://bestpractices.coreinfrastructure.org/projects/<replace-with-created-project-identifier>) |
 | howfairis                          | [![fair-software badge](https://img.shields.io/badge/fair--software.eu-%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8F%20%20%E2%97%8B-yellow)](https://fair-software.eu) |
 | **Other best practices**           | &nbsp; |
-| Static analysis                    | [![workflow scq badge](https://sonarcloud.io/api/project_badges/measure?project=NLeSC_nlesc_mdash&metric=alert_status)](https://sonarcloud.io/dashboard?id=NLeSC_nlesc_mdash) |
-| Coverage                           | [![workflow scc badge](https://sonarcloud.io/api/project_badges/measure?project=NLeSC_nlesc_mdash&metric=coverage)](https://sonarcloud.io/dashboard?id=NLeSC_nlesc_mdash) || Documentation                      | [![Documentation Status](https://readthedocs.org/projects/nlesc_mdash/badge/?version=latest)](https://nlesc_mdash.readthedocs.io/en/latest/?badge=latest) || **GitHub Actions**                 | &nbsp; |
-| Build                              | [![build](https://github.com/NLeSC/nlesc_mdash/actions/workflows/build.yml/badge.svg)](https://github.com/NLeSC/nlesc_mdash/actions/workflows/build.yml) |
-| Citation data consistency          | [![cffconvert](https://github.com/NLeSC/nlesc_mdash/actions/workflows/cffconvert.yml/badge.svg)](https://github.com/NLeSC/nlesc_mdash/actions/workflows/cffconvert.yml) || SonarCloud                         | [![sonarcloud](https://github.com/NLeSC/nlesc_mdash/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/NLeSC/nlesc_mdash/actions/workflows/sonarcloud.yml) |## How to use nlesc_mdash
+| Static analysis                    | [![workflow scq badge](https://sonarcloud.io/api/project_badges/measure?project=NLeSC_nlesc_ser2026_plots&metric=alert_status)](https://sonarcloud.io/dashboard?id=NLeSC_nlesc_ser2026_plots) |
+| Coverage                           | [![workflow scc badge](https://sonarcloud.io/api/project_badges/measure?project=NLeSC_nlesc_ser2026_plots&metric=coverage)](https://sonarcloud.io/dashboard?id=NLeSC_nlesc_ser2026_plots) || Documentation                      | [![Documentation Status](https://readthedocs.org/projects/nlesc_ser2026_plots/badge/?version=latest)](https://nlesc_ser2026_plots.readthedocs.io/en/latest/?badge=latest) || **GitHub Actions**                 | &nbsp; |
+| Build                              | [![build](https://github.com/NLeSC/nlesc_ser2026_plots/actions/workflows/build.yml/badge.svg)](https://github.com/NLeSC/nlesc_ser2026_plots/actions/workflows/build.yml) |
+| Citation data consistency          | [![cffconvert](https://github.com/NLeSC/nlesc_ser2026_plots/actions/workflows/cffconvert.yml/badge.svg)](https://github.com/NLeSC/nlesc_ser2026_plots/actions/workflows/cffconvert.yml) || SonarCloud                         | [![sonarcloud](https://github.com/NLeSC/nlesc_ser2026_plots/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/NLeSC/nlesc_ser2026_plots/actions/workflows/sonarcloud.yml) |## How to use nlesc_ser2026_plots
 
 Dashboard displaying business control information for the Netherlands eScience Center
 
@@ -22,11 +22,11 @@ The project setup is documented in [project_setup.md](project_setup.md). Feel fr
 
 ## Installation
 
-To install nlesc_mdash from GitHub repository, do:
+To install nlesc_ser2026_plots from GitHub repository, do:
 
 ```console
-git clone git@github.com:NLeSC/nlesc_mdash.git
-cd nlesc_mdash
+git clone git@github.com:NLeSC/nlesc_ser2026_plots.git
+cd nlesc_ser2026_plots
 python -m pip install .
 ```
 
@@ -36,7 +36,7 @@ Include a link to your project's full documentation here.
 
 ## Contributing
 
-If you want to contribute to the development of nlesc_mdash,
+If you want to contribute to the development of nlesc_ser2026_plots,
 have a look at the [contribution guidelines](CONTRIBUTING.md).
 
 ## Credits

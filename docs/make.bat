@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=_build
-set SPHINXPROJ=nlesc_mdash
+set SPHINXPROJ=nlesc_ser2026_plots
 
 if "%1" == "" goto help
 

@@ -1,7 +1,7 @@
-"""Tests for the nlesc_mdash.my_module module."""
+"""Tests for the nlesc_ser2026_plots.my_module module."""
 
 import pytest
-from nlesc_mdash.my_module import hello
+from nlesc_ser2026_plots.my_module import hello
 
 
 def test_hello():

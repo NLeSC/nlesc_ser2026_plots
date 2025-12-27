@@ -1,4 +1,4 @@
-"""Documentation about nlesc_mdash."""
+"""Documentation about nlesc_ser2026_plots."""
 
 import logging
 

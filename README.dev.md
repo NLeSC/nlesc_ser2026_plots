@@ -1,4 +1,4 @@
-# `nlesc_mdash` developer documentation
+# `nlesc_ser2026_plots` developer documentation
 
 If you're looking for user documentation, go [here](README.md).
 
@@ -15,7 +15,7 @@ source env/bin/activate
 python -m pip install --upgrade pip setuptools
 
 # (from the project root directory)
-# install nlesc_mdash as an editable package
+# install nlesc_ser2026_plots as an editable package
 python -m pip install --no-cache-dir --editable .
 # install development dependencies
 python -m pip install --no-cache-dir --editable .[dev]
@@ -35,7 +35,7 @@ The first way requires an activated virtual environment with the development too
 pytest -v
 ```
 
-The second is to use `tox`, which can be installed separately (e.g. with `pip install tox`), i.e. not necessarily inside the virtual environment you use for installing `nlesc_mdash`, but then builds the necessary virtual environments itself by simply running:
+The second is to use `tox`, which can be installed separately (e.g. with `pip install tox`), i.e. not necessarily inside the virtual environment you use for installing `nlesc_ser2026_plots`, but then builds the necessary virtual environments itself by simply running:
 
 ```shell
 tox
@@ -135,8 +135,8 @@ In a new terminal:
 ```shell
 # OPTIONAL: prepare a new directory with fresh git clone to ensure the release
 # has the state of origin/main branch
-cd $(mktemp -d nlesc_mdash.XXXXXX)
-git clone git@github.com:NLeSC/nlesc_mdash .
+cd $(mktemp -d nlesc_ser2026_plots.XXXXXX)
+git clone git@github.com:NLeSC/nlesc_ser2026_plots .
 
 # make sure to have a recent version of pip and the publishing dependencies
 python -m pip install --upgrade pip
@@ -150,13 +150,13 @@ python -m twine upload --repository testpypi dist/*
 ```
 
 Visit
-[https://test.pypi.org/project/nlesc_mdash](https://test.pypi.org/project/nlesc_mdash)
+[https://test.pypi.org/project/nlesc_ser2026_plots](https://test.pypi.org/project/nlesc_ser2026_plots)
 and verify that your package was uploaded successfully. Keep the terminal open, we'll need it later.
 
 In a new terminal, without an activated virtual environment or an env directory:
 
 ```shell
-cd $(mktemp -d nlesc_mdash-test.XXXXXX)
+cd $(mktemp -d nlesc_ser2026_plots-test.XXXXXX)
 
 # prepare a clean virtual environment and activate it
 python -m venv env
@@ -168,7 +168,7 @@ python -m pip install --upgrade pip
 # install from test pypi instance:
 python -m pip -v install --no-cache-dir \
 --index-url https://test.pypi.org/simple/ \
---extra-index-url https://pypi.org/simple nlesc_mdash
+--extra-index-url https://pypi.org/simple nlesc_ser2026_plots
 ```
 
 Check that the package works as it should when installed from pypitest.
@@ -183,4 +183,4 @@ python -m twine upload dist/*
 
 ### (3/3) GitHub
 
-Don't forget to also make a [release on GitHub](https://github.com/NLeSC/nlesc_mdash/releases/new).
+Don't forget to also make a [release on GitHub](https://github.com/NLeSC/nlesc_ser2026_plots/releases/new).

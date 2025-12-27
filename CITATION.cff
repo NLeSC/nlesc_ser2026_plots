@@ -1,14 +1,14 @@
 # YAML 1.2
 ---
 cff-version: "1.2.0"
-title: "nlesc_mdash"
+title: "nlesc_ser2026_plots"
 authors:
   - family-names: Oord
     given-names: Gijs
     orcid: "https://orcid.org/0000-0000-0000-0000"
 date-released: 2025-07-25
 version: "0.1.0"
-repository-code: "https://github.com/NLeSC/nlesc_mdash"
+repository-code: "https://github.com/NLeSC/nlesc_ser2026_plots"
 keywords:
   - "dashboard"
   - " business information"
