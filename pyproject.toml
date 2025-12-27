@@ -22,9 +22,12 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
 ]
-dependencies = []
-description = "Dashboard displaying business control information for the Netherlands eScience Center"
-keywords = ["dashboard"," business information"]
+dependencies = [
+    "python-altair>=1.0.0",
+    "pandas>=2.0.0",
+]
+description = "Graphics for the 2026 self evaluation report of the Netherlands eScience Center"
+keywords = ["graphics","report"]
 license = {file = "LICENSE"}
 name = "nlesc_ser2026_plots"
 readme = {file = "README.md", content-type = "text/markdown"}
