@@ -4,11 +4,40 @@ import pandas as pd
 import altair as alt
 from typing import Optional
 
+# Define a dictionary to hold all style elements
+def my_nlesc_theme():
+    """Custom NLESC theme for Altair charts."""
+    return {
+        "config": {
+            "title": {
+                "fontSize": 30,
+                "anchor": "start",
+                "font": "Nunito",
+            },
+            "axis": {
+                "labelFont": "Calibri",
+                "labelFontSize": 20,
+                "titleFont": "Nunito",
+                "titleFontSize": 26,
+            },
+            "legend": {
+                "labelFont": "Calibri",
+                "labelFontSize": 20,
+                "titleFont": "Nunito",
+                "titleFontSize": 26,
+            },
+            "axisX": {
+                "labelAngle": 0,
+            },
+            "range": {"category": ["#009DDD", "#380339", "#FFB313",  "#016004", "#0808C6", "#6A4C93"]}
+        }
+    }
+alt.themes.register("my_nlesc_theme", my_nlesc_theme)
 
 def create_stacked_bar_chart(
     df: pd.DataFrame,
     title: Optional[str] = "FTE Allocation by Activity per Year",
-    width: int = 600,
+    width: int = 700,
     height: int = 400
 ) -> alt.Chart:
     """Create a stacked bar chart showing FTE allocation by activity per year.
@@ -73,28 +102,25 @@ def create_stacked_bar_chart(
         var_name='Activity',
         value_name='FTE'
     )
+
+    alt.themes.enable("my_nlesc_theme")
     
     # Create the stacked bar chart
     chart = alt.Chart(df_melted).mark_bar().encode(
-        x=alt.X(f'{year_col}:O', title='Year', axis=alt.Axis(labelAngle=0)),
+        x=alt.X(
+            f'{year_col}:O',
+            title='Year'
+        ),
         y=alt.Y('FTE:Q', title='Full-Time Equivalent (FTE)'),
         color=alt.Color(
             'Activity:N',
-            title='Activity',
-            scale=alt.Scale(scheme='category20')
+            title='Activity'
         ),
-        tooltip=[
-            alt.Tooltip(f'{year_col}:O', title='Year'),
-            alt.Tooltip('Activity:N', title='Activity'),
-            alt.Tooltip('FTE:Q', title='FTE', format='.2f')
-        ]
     ).properties(
         width=width,
         height=height,
         title=alt.TitleParams(
-            text=title,
-            fontSize=16,
-            anchor='start'
+            text=title
         )
     ).resolve_scale(
         color='independent'

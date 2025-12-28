@@ -23,7 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
 ]
 dependencies = [
-    "python-altair>=1.0.0",
+    "altair>=1.0.0",
     "pandas>=2.0.0",
 ]
 description = "Graphics for the 2026 self evaluation report of the Netherlands eScience Center"
@@ -47,6 +47,7 @@ dev = [
     "sphinx-autoapi",
     "tox",
     "myst_parser",
+    "IPython",
 ]
 docs = [
     "sphinx",

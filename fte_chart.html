@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    #vis.vega-embed {
+      width: 100%;
+      display: flex;
+    }
+
+    #vis.vega-embed details,
+    #vis.vega-embed details summary {
+      position: relative;
+    }
+  </style>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-lite@6.1.0"></script>
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
+</head>
+<body>
+  <div id="vis"></div>
+  <script>
+    (function(vegaEmbed) {
+      var spec = {"config": {"title": {"fontSize": 30, "anchor": "start", "font": "Nunito"}, "axis": {"labelFont": "Calibri", "labelFontSize": 20, "titleFont": "Nunito", "titleFontSize": 26}, "legend": {"labelFont": "Calibri", "labelFontSize": 20, "titleFont": "Nunito", "titleFontSize": 26}, "axisX": {"labelAngle": 0}, "range": {"category": ["#009DDD", "#380339", "#FFB313", "#016004", "#0808C6", "#6A4C93"]}}, "data": {"name": "data-6feca66df7c27180a5396ec8a73a2a09"}, "mark": {"type": "bar"}, "encoding": {"color": {"field": "Activity", "title": "Activity", "type": "nominal"}, "x": {"field": "Year", "title": "Year", "type": "ordinal"}, "y": {"field": "FTE", "title": "Full-Time Equivalent (FTE)", "type": "quantitative"}}, "height": 500, "resolve": {"scale": {"color": "independent"}}, "title": {"text": "FTE Allocation by Activity per Year"}, "width": 800, "$schema": "https://vega.github.io/schema/vega-lite/v6.1.0.json", "datasets": {"data-6feca66df7c27180a5396ec8a73a2a09": [{"Year": 2019, "Activity": "Call Projects", "FTE": 25.0}, {"Year": 2020, "Activity": "Call Projects", "FTE": 30.0}, {"Year": 2021, "Activity": "Call Projects", "FTE": 32.0}, {"Year": 2022, "Activity": "Call Projects", "FTE": 26.0}, {"Year": 2023, "Activity": "Call Projects", "FTE": 33.0}, {"Year": 2024, "Activity": "Call Projects", "FTE": 29.0}, {"Year": 2025, "Activity": "Call Projects", "FTE": 20.0}, {"Year": 2019, "Activity": "External Projects", "FTE": 4.5}, {"Year": 2020, "Activity": "External Projects", "FTE": 5.0}, {"Year": 2021, "Activity": "External Projects", "FTE": 5.1}, {"Year": 2022, "Activity": "External Projects", "FTE": 6.5}, {"Year": 2023, "Activity": "External Projects", "FTE": 7.0}, {"Year": 2024, "Activity": "External Projects", "FTE": 6.0}, {"Year": 2025, "Activity": "External Projects", "FTE": 2.5}, {"Year": 2019, "Activity": "Knowledge Development", "FTE": 1.1}, {"Year": 2020, "Activity": "Knowledge Development", "FTE": 1.2}, {"Year": 2021, "Activity": "Knowledge Development", "FTE": 2.0}, {"Year": 2022, "Activity": "Knowledge Development", "FTE": 1.5}, {"Year": 2023, "Activity": "Knowledge Development", "FTE": 0.6}, {"Year": 2024, "Activity": "Knowledge Development", "FTE": 0.9}, {"Year": 2025, "Activity": "Knowledge Development", "FTE": 0.4}, {"Year": 2019, "Activity": "Trainings", "FTE": 2.8}, {"Year": 2020, "Activity": "Trainings", "FTE": 3.1}, {"Year": 2021, "Activity": "Trainings", "FTE": 3.4}, {"Year": 2022, "Activity": "Trainings", "FTE": 2.9}, {"Year": 2023, "Activity": "Trainings", "FTE": 2.7}, {"Year": 2024, "Activity": "Trainings", "FTE": 1.8}, {"Year": 2025, "Activity": "Trainings", "FTE": 1.2}, {"Year": 2019, "Activity": "Community Building", "FTE": 2.5}, {"Year": 2020, "Activity": "Community Building", "FTE": 2.6}, {"Year": 2021, "Activity": "Community Building", "FTE": 2.7}, {"Year": 2022, "Activity": "Community Building", "FTE": 2.5}, {"Year": 2023, "Activity": "Community Building", "FTE": 2.3}, {"Year": 2024, "Activity": "Community Building", "FTE": 1.2}, {"Year": 2025, "Activity": "Community Building", "FTE": 1.0}]}};
+      var embedOpt = {"mode": "vega-lite"};
+
+      function showError(el, error){
+          el.innerHTML = ('<div style="color:red;">'
+                          + '<p>JavaScript Error: ' + error.message + '</p>'
+                          + "<p>This usually means there's a typo in your chart specification. "
+                          + "See the javascript console for the full traceback.</p>"
+                          + '</div>');
+          throw error;
+      }
+      const el = document.getElementById('vis');
+      vegaEmbed("#vis", spec, embedOpt)
+        .catch(error => showError(el, error));
+    })(vegaEmbed);
+
+  </script>
+</body>
+</html>

@@ -1,7 +1,7 @@
 """Tests for the nlesc_ser2026_plots.my_module module."""
 
 import pytest
-from nlesc_ser2026_plots.my_module import create_stacked_bar_chart
+from nlesc_ser2026_plots.bar_charts import create_stacked_bar_chart
 """Tests for the nlesc_ser2026_plots.my_module module."""
 
 
