@@ -25,6 +25,8 @@ classifiers = [
 dependencies = [
     "altair>=1.0.0",
     "pandas>=2.0.0",
+    "geopandas>=0.13.0",
+    "vl-convert-python>=0.4.0",
 ]
 description = "Graphics for the 2026 self evaluation report of the Netherlands eScience Center"
 keywords = ["graphics","report"]
