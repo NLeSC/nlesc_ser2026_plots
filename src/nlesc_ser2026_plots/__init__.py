@@ -2,12 +2,18 @@
 
 import logging
 import altair as alt
+from pyalex import config
 
 logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __author__ = "Gijs van den Oord"
 __email__ = "g.vandenoord@esciencecenter.nl"
 __version__ = "0.1.0"
+
+config.email = __email__
+config.max_retries = 10
+config.retry_backoff_factor = 0.1
+config.retry_http_codes = [429, 500, 503]
 
 # Define a dictionary to hold all style elements
 def my_nlesc_theme():

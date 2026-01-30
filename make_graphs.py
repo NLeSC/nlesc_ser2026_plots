@@ -3,12 +3,16 @@
 import pandas as pd
 import sys
 import os
+import tqdm
 from pathlib import Path
 from textwrap import wrap
+from docx import Document
+from docx.shared import Pt
 
 # Import the bar chart function from our module
 from nlesc_ser2026_plots.bar_charts import create_yearly_stacked_bar_chart, create_yearly_multi_bar_chart, create_yearly_stacked_bar_line_chart
 from nlesc_ser2026_plots.geo_charts import plot_netherlands_with_institutions
+from nlesc_ser2026_plots.reference_lists import create_refstrings_list
 import argparse
 
 def parse_arguments():
@@ -19,6 +23,35 @@ def parse_arguments():
     parser.add_argument("--output_dir", type=str, default=".", help="Directory to save the generated charts.")
     return parser.parse_args()
 
+def list_references(
+        output_file: Path, 
+        df: pd.DataFrame, 
+        offset: int = 1    
+    ) -> int:
+    pyalex_ids = df['OpenAlexID'].dropna().unique().tolist()
+    document = Document()
+    for refstring in tqdm.tqdm(create_refstrings_list(pyalex_ids)):
+        p = document.add_paragraph()
+        p.add_run(f"{offset}\t").bold = True
+        p.add_run(refstring)
+        offset += 1
+    document.save(output_file)
+    return offset
+
+def convert_references_to_docx(
+        csv_file: Path, 
+        output_file: Path, 
+    ) -> int:
+    df = pd.read_csv(csv_file)
+    document = Document()
+    for id, refstr in df.itertuples(index=False):
+        p = document.add_paragraph()
+        p.add_run(f"{id}\t").bold = True
+        p.add_run(refstr)
+    document.save(output_file)
+    return offset
+
+# Main script execution
 args = parse_arguments()
 input_dir = Path(args.input_dir)
 if not input_dir.is_dir():
@@ -39,7 +72,7 @@ if os.path.exists(fte_file):
         df=df_long,
         y_variable=value_variable,
         color_variable=color_variable,
-        title="FTE Allocation by Activity per Year",
+        title="FTE Allocation per Activity",
         dimensions=[800, 500]
     )
     chart.save(output_dir / f"fte_allocation_chart.{args.format}")
@@ -79,7 +112,7 @@ if os.path.exists(headcount_file):
         df=df_long,
         y_variable=value_variable,
         color_variable=color_variable,
-        title="Number of Employees per Year",
+        title="Number of Employees",
         dimensions=[800, 500]
     )
     chart.save(output_dir / f"headcount_data_chart.{args.format}")
@@ -100,7 +133,7 @@ if os.path.exists(calls_file):
     df_aggregated[acceptance_rate_variable] = df_aggregated['Year'].map(df_yearly_sums.set_index('Year')[acceptance_rate_variable])
     bar_line_chart = create_yearly_stacked_bar_line_chart(
         df=df_aggregated,
-        title="Submissions and Acceptance Rate Over Years",
+        title="Submissions and Acceptance Rates",
         y_variable_left="Submissions",
         y_variable_right=acceptance_rate_variable,
         color_variable="Call",
@@ -121,7 +154,7 @@ if os.path.exists(calls_file):
     df_long = df_aggregated.reset_index().melt(id_vars=['Year'], var_name=offset_variable, value_name=value_variable)
     chart = create_yearly_multi_bar_chart(
         df=df_long,
-        title="Requested budget vs approved budget per year",
+        title="Requested vs. Provided Budget",
         y_variable=value_variable,
         offset_variable=offset_variable,
         dimensions=[800, 500]
@@ -129,6 +162,8 @@ if os.path.exists(calls_file):
     chart.save(output_dir / f"calls_multi_bar_chart.{args.format}")
 
 projects_file = input_dir / "project_overview.csv"
+
+
 if os.path.exists(projects_file):
     ext_proj_df = pd.read_csv(projects_file, index_col=0)
     # Reset index to make year a column if it's currently the index
@@ -146,7 +181,7 @@ if os.path.exists(projects_file):
         df=df_aggregated,
         y_variable="Income (kEUR)",
         color_variable="Type",
-        title="External Acquisition per Year",
+        title="External Acquisition Income",
         dimensions=[800, 500]
     )
     external_acquisition_chart.save(output_dir / f"external_acquisition_per_year.{args.format}")
@@ -164,22 +199,50 @@ if os.path.exists(projects_file):
         # Filter out records where 'project type' is 'EXTERNAL' and 'author position' is 'none'
         conference_df = conference_df[~((conference_df['project type'] == 'EXTERNAL') & (conference_df['author position'] == 'none'))]
     publications_df = pd.concat([journal_df, conference_df], ignore_index=True)
-    # Create new column 'authorship' based on 'author position'
-    publications_df['authorship'] = publications_df['author position'].apply(lambda x: 'NLeSC funded' if x == 'none' else 'NLeSC authored')
-    # Aggregate data by 'year' and 'authorship'
-    df_aggregated = publications_df.groupby(['year', 'authorship'], as_index=False).size()
-    print("Publications DataFrame loaded successfully:")
-    print(df_aggregated.head())
-    df_aggregated.rename(columns={'year': 'Year', 'size': 'Number of Publications'}, inplace=True)
-    publications_chart = create_yearly_stacked_bar_chart(
-        df=df_aggregated,
-        y_variable="Number of Publications",
-        color_variable="authorship",
-        title="Peer-reviewed publications per year",
-        dimensions=[800, 500]
-    )
-    publications_chart.save(output_dir / f"publications_per_year.{args.format}")
-    
+    if not publications_df.empty:
+        # Create new column 'authorship' based on 'author position'
+        publications_df['authorship'] = publications_df['author position'].apply(lambda x: 'NLeSC funded' if x == 'none' else 'NLeSC authored')
+        # Aggregate data by 'year' and 'authorship'
+        df_aggregated = publications_df.groupby(['year', 'authorship'], as_index=False).size()
+        df_aggregated.rename(columns={'year': 'Year', 'size': 'Number of Publications'}, inplace=True)
+        publications_chart = create_yearly_stacked_bar_chart(
+            df=df_aggregated,
+            y_variable="Number of Publications",
+            color_variable="authorship",
+            title="Peer-reviewed publications per year",
+            dimensions=[800, 500]
+        )
+        publications_chart.save(output_dir / f"publications_per_year.{args.format}")
+        total_publications = df_aggregated['Number of Publications'].sum()
+        total_authored_publications = df_aggregated['Number of Publications'][df_aggregated['authorship'] == 'NLeSC authored'].sum()
+        total_first_author_publications = publications_df[publications_df['author position'] == 'first'].shape[0]
+        total_citations = publications_df['citations'].sum()
+        total_authored_citations = publications_df[publications_df['authorship'] == 'NLeSC authored']['citations'].sum()
+        total_open_access = publications_df['open access'].sum()
+        print(f"Total publications: {total_publications}")
+        print(f"Total journal publications: {journal_df.shape[0]}")
+        print(f"Total conference publications: {conference_df.shape[0]}")
+        print(f"Total NLeSC authored publications: {total_authored_publications}")
+        print(f"Total first-author publications: {total_first_author_publications}")
+        print(f"Total citations: {total_citations}")
+        print(f"Total citations for NLeSC authored publications: {total_authored_citations}")
+        print(f"Open access publications: {total_open_access} ({(total_open_access/total_publications)*100:.2f}%)")
 
+        offset = 1
+        # Generate reference lists
+        authored_publications_file = output_dir / "authored_publications.csv"
+        converted_authored_publications_file = output_dir / "authored_publications.docx"
+        convert_references_to_docx(
+            csv_file=authored_publications_file,
+            output_file=converted_authored_publications_file
+        )
+#        offset = list_references(authored_publications_file, publications_df[publications_df['authorship'] == 'NLeSC authored'], offset)
+        funded_publications_file = output_dir / "funded_publications.csv"
+#        offset = list_references(funded_publications_file, publications_df[publications_df['authorship'] == 'NLeSC funded'], offset)
+        converted_funded_publications_file = output_dir / "funded_publications.docx"
+        convert_references_to_docx(
+            csv_file=funded_publications_file,
+            output_file=converted_funded_publications_file
+        )
 
 
