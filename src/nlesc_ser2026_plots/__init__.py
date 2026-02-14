@@ -40,11 +40,22 @@ def my_nlesc_theme():
             "axisX": {
                 "labelAngle": 0,
             },
-            "range": {"category": ["#009DDD", "#380339", "#FFB313",  "#016004", "#0808C6", "#6A4C93"]},
+            "range": {
+                "category": [
+                    "#009DDD", "#380339", "#FFB313", "#0AC711", 
+                    "#29295D", "#6A4C93", "#F87224", "#273C0C"
+                ]
+            },
             "facet_cell": {
                 "strokeWidth": 1
             },
             "bar": {
+                "stroke": "white",
+                "strokeWidth": 2,
+                "opacity": 0.75,
+                "color": "#009DDD"
+            },
+            "arc": {
                 "stroke": "white",
                 "strokeWidth": 2,
                 "opacity": 0.75

@@ -48,7 +48,6 @@ def create_yearly_stacked_bar_chart(
     return chart
 
 
-
 def create_yearly_bar_line_chart(
     df: pd.DataFrame,
     title: str,
@@ -83,6 +82,7 @@ def create_yearly_bar_line_chart(
             text=title
         )
     )
+    
     return chart
 
 
@@ -126,7 +126,6 @@ def create_yearly_stacked_bar_line_chart(
     return chart
 
 
-
 def create_yearly_multi_bar_chart(
     df: pd.DataFrame,
     title: str,
@@ -155,4 +154,178 @@ def create_yearly_multi_bar_chart(
     )
     return chart
 
+def create_survey_chart(
+    df: pd.DataFrame,
+    x_variable: str,
+    x_variable_2: str,
+    dimensions: Optional[list[int]] = [700, 400],
+) -> int:
+    """Create a survey chart from a DataFrame.
+    Args:
+        df (pd.DataFrame): DataFrame with survey data.
+        output_file (str): Path to save the output chart.
+        dimensions (list[int], optional): Width and height of the chart. Defaults to [700, 400].
+    Returns:
+        int: Offset value for further processing.
+    """
 
+    alt.themes.enable("my_nlesc_theme")
+
+    # Create the survey chart
+    x_scale = alt.Scale(domain=[0, 6])
+    chart = alt.Chart(df).mark_bar(size=40).encode(
+        y=alt.Y('Question:N', sort='-y', title=None, 
+                axis=alt.Axis(
+                    labels=True, 
+                    grid=False,
+                    labelExpr="split(datum.label,'@')", 
+                    labelLimit=350)),
+        yOffset = alt.Column(f'{x_variable_2}:N', title=None),
+        color=alt.Color(f'{x_variable_2}:N', title=["Evaluation"," period"], sort='descending'),
+        opacity=alt.condition(
+            alt.datum[x_variable_2] == '2013-2018', 
+            alt.value(0.4),  # More transparent for 2013-2018
+            alt.value(0.8)   # Fully opaque for other periods
+        ),
+        x=alt.X(f'{x_variable}:Q', 
+                scale = x_scale, 
+                axis=alt.Axis(
+                    title=None, 
+                    labels=True, 
+                    grid=True,
+                    gridColor='darkgray', 
+                    tickCount=6, 
+                    labelExpr="datum.value == 1 ? 'Strongly disagree' : datum.value == 2 ? 'Disagree' : datum.value == 3 ? 'Neutral' : datum.value == 4 ? 'Agree' : datum.value == 5 ? 'Strongly agree' : ''")),
+    ).properties(
+        width=dimensions[0],
+        height=dimensions[1],
+        title=alt.TitleParams(
+            text='LA Survey Results'
+        )
+    )
+
+    return chart
+
+def create_pie_chart(
+    df: pd.DataFrame,
+    title: str,
+    category_variable: str,
+    value_variable: str,
+    dimensions: Optional[list[int]] = [700, 400],
+) -> alt.Chart:
+    """Create a pie chart from a DataFrame.
+        df (pd.DataFrame): DataFrame with categories and values.
+    Args:
+        title (str): Title for the chart.
+        category_variable (str): Name of the column to use for categories.
+        value_variable (str): Name of the column to use for values.
+        dimensions (list[int], optional): Width and height of the chart. Defaults to [700, 400].
+    Returns:
+        alt.Chart: Altair chart object representing the pie chart.
+    """
+
+    alt.themes.enable("my_nlesc_theme")
+
+    # Create the pie chart
+    chart = alt.Chart(df).mark_arc().encode(
+        theta=alt.Theta(f'{value_variable}:Q', stack=True),
+        color=alt.Color(f'{category_variable}:N', 
+                        sort='descending',
+                        legend=alt.Legend(title=f'{category_variable}',
+                                          labelExpr="split(datum.label,'@')", 
+                                          orient='right', 
+                                          titleAnchor='middle', 
+                                          offset=-50)),
+    ).properties(
+        width=dimensions[0],
+        height=dimensions[1],
+        title=alt.TitleParams(
+            text=title
+        )
+    )
+    return chart
+
+def create_sorted_bar_chart(
+    df: pd.DataFrame,
+    title: str,
+    category_variable: str,
+    value_variable: str,
+    dimensions: Optional[list[int]] = [800, 400],
+) -> alt.Chart:
+    """Create a sorted bar chart from a DataFrame.
+    Args:
+        df (pd.DataFrame): DataFrame with categories and values.
+        title (str): Title for the chart.
+        category_variable (str): Name of the column to use for categories.
+        value_variable (str): Name of the column to use for values.
+        dimensions (list[int], optional): Width and height of the chart. Defaults to [700, 400].
+    Returns:
+        alt.Chart: Altair chart object representing the sorted bar chart.
+    """
+
+    alt.themes.enable("my_nlesc_theme")
+
+    # Create the sorted bar chart
+    chart = alt.Chart(df).mark_bar().encode(
+        x=alt.X(f'{category_variable}:N', sort='-y', title=None, axis=alt.Axis(labelExpr="split(datum.label,'@')", labelAngle=45)),
+        y=alt.Y(f'{value_variable}:Q', title=value_variable),
+        color=alt.Color(f'Category:N', title=None)
+    ).properties(
+        width=dimensions[0],
+        height=dimensions[1],
+        title=alt.TitleParams(
+            text=title
+        )
+    ).resolve_scale(
+        color='independent'
+    )
+    return chart
+
+def create_table_heatmap(
+    df: pd.DataFrame,
+    title: str,
+    x_variable: str,
+    y_variable: str,
+    value_variable: str,
+    x_range: Optional[list[int]] = None,
+    dimensions: Optional[list[int]] = [500, 500],
+) -> alt.Chart:
+    """Create a table heatmap from a DataFrame.
+    Args:
+        df (pd.DataFrame): DataFrame with categories and values.
+        title (str): Title for the chart.
+        x_variable (str): Name of the column to use for x-axis.
+        y_variable (str): Name of the column to use for y-axis.
+        value_variable (str): Name of the column to use for values.
+        dimensions (list[int], optional): Width and height of the chart. Defaults to [700, 400].
+    Returns:
+        alt.Chart: Altair chart object representing the table heatmap.
+    """
+
+    alt.themes.enable("my_nlesc_theme")
+
+    x_range = [str(i) for i in range(*x_range)] if x_range else None
+
+    base = alt.Chart(df).encode(
+        x=alt.X(f'{x_variable}:O', title=None, scale=alt.Scale(domain=x_range, paddingInner=0) if x_range else None),
+        y=alt.Y(f'{y_variable}:N', title=None, axis=alt.Axis(labelExpr="split(datum.label,'@')", labelLimit=350)),
+    )
+
+    # Create the table heatmap
+    chart = base.mark_rect().encode(
+        color=alt.Color(f'{value_variable}:Q', scale=alt.Scale(scheme='blues'), legend=None)
+    )
+
+    # Configure text
+    text = base.transform_calculate(
+        value=f'datum.{value_variable}/100'
+    ).mark_text(baseline='middle', fontSize=20).encode(
+        text=alt.Text('value:Q', format=".0%"), color=alt.value('white'), opacity=alt.condition(alt.datum.value > 0, alt.value(1), alt.value(0)))
+
+    return (chart + text).properties(
+        width=dimensions[0],
+        height=dimensions[1],
+        title=alt.TitleParams(
+            text=title
+        )
+    )
