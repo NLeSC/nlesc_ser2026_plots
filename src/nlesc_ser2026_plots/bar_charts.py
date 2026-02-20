@@ -90,7 +90,7 @@ def create_yearly_stacked_bar_line_chart(
     df: pd.DataFrame,
     title: Optional[str],
     y_variable_left: str,
-    y_variable_right: str,
+    y_variable_right: Optional[str],
     color_variable: str,
     dimensions: Optional[list[int]] = [700, 400],
 ) -> alt.Chart:

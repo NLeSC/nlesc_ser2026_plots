@@ -11,6 +11,10 @@ from textwrap import wrap
 
 # Define constants
 BUDGET_COLUMN = 'Budget (MEUR)'
+NLESC_INITIATED_REPOS = 'Initiated by NLeSC'
+NLESC_CONTRIBUTED_REPOS = 'Contributed@by NLeSC'
+INCOME_STREAM = 'Income Source'
+
 from docx import Document
 from docx.shared import Pt
 
@@ -140,28 +144,46 @@ if os.path.exists(cities_file):
     geo_chart.save(f"netherlands_institutions.{args.format}")
 
 # Make bar charts for funding data
-funding_file = input_dir / "example_income_streams.csv"
-if os.path.exists(funding_file):
-    funding_df = pd.read_csv(funding_file)
-    color_variable = 'Income Stream'
+finance_file = input_dir / "finance.csv"
+if os.path.exists(finance_file):
+    finance_df = pd.read_csv(finance_file, delimiter='|', encoding='utf-8')
+    income_cols = [c for c in finance_df.columns if c.endswith("income")]
     value_variable = 'Income (M€)'
-    df_long = funding_df.melt(id_vars=['Year'], var_name=color_variable, value_name=value_variable)
+    df_long = finance_df.melt(id_vars=['Year'], value_vars=income_cols, var_name=INCOME_STREAM, value_name=value_variable)
+    df_long[INCOME_STREAM] = df_long[INCOME_STREAM].str.replace('income', '').apply(lambda x: '@'.join(wrap(x, 10)))
+    df_long[value_variable] = df_long[value_variable] / 1_000_000
     chart = create_yearly_stacked_bar_chart(
         df=df_long,
         y_variable=value_variable,
-        color_variable=color_variable,
-        title="Income sources per Year",
+        color_variable=INCOME_STREAM,
+        title="Yearly income",
         dimensions=[800, 500]
     )
     chart.save(output_dir / f"funding_data_chart.{args.format}")
+    ACTIVITY = "Activity"
+    expenditure_cols = [c for c in finance_df.columns if c.startswith("FTE")]
+    value_variable = 'Expenditure (FTE)'
+    df_long = finance_df.melt(id_vars=['Year'], value_vars=expenditure_cols, var_name=ACTIVITY, value_name=value_variable)
+    df_long[ACTIVITY] = df_long[ACTIVITY].str.replace('FTE', '').apply(lambda x: '@'.join(wrap(x, 13)))
+    chart = create_yearly_stacked_bar_chart(
+        df=df_long,
+        y_variable=value_variable,
+        color_variable=ACTIVITY,
+        title="Expenditure per Activity",
+        dimensions=[800, 500]
+    )
+    chart.save(output_dir / f"fte_allocation_chart.{args.format}")
 
 # Make bar charts for headcount data
-headcount_file = input_dir / "example_headcount_data.csv"
-if os.path.exists(headcount_file):
-    headcount_df = pd.read_csv(headcount_file)
+hr_file = input_dir / "contracts.csv"
+if os.path.exists(hr_file):
+    hr_df = pd.read_csv(hr_file, delimiter='|', encoding='utf-8')
     color_variable = 'Department'
-    value_variable = 'Number of Employees'
-    df_long = headcount_df.melt(id_vars=['Year'], var_name=color_variable, value_name=value_variable)
+    value_variable = 'Employees'
+    hr_df['Headcount Management'] = hr_df['Headcount DT'] + hr_df['Headcount MT']
+    headcount_cols = [c for c in hr_df.columns if c.startswith("Headcount") and c not in ['Headcount total', 'Headcount DT', 'Headcount NLeSC', 'Headcount MT']]
+    df_long = hr_df.melt(id_vars=['Year'], value_vars=headcount_cols, var_name=color_variable, value_name=value_variable)
+    df_long[color_variable] = df_long[color_variable].str.replace('Headcount ', '').apply(lambda x: '@'.join(wrap(x, 10)))
     chart = create_yearly_stacked_bar_chart(
         df=df_long,
         y_variable=value_variable,
@@ -486,7 +508,45 @@ if os.path.exists(training_data_file):
                                     x_range=[2022, 2026])
     chart.save(output_dir / f"training_survey.{args.format}")
 
+software_file = input_dir / "softwareOverview.csv"
+if os.path.exists(software_file):
+    software_df = pd.read_csv(software_file, delimiter='|', encoding='utf-8')
+    software_df = software_df[~((software_df['first_nlesc_commit'] == 'UNKNOWN') | (software_df['last_nlesc_commit']== 'UNKNOWN'))]
+    software_df['nlesc_initiated'] = (pd.DatetimeIndex(software_df['first_nlesc_commit']) - pd.DatetimeIndex(software_df['first_commit']) < pd.Timedelta(days=30))
+    stats_df = pd.DataFrame({
+        'Year': range(2019, 2026)
+    })
+    for year in range(2019, 2026):
+        new_column = (year >= pd.DatetimeIndex(software_df["first_nlesc_commit"]).year) & (year <= pd.DatetimeIndex(software_df["last_nlesc_commit"]).year)
+        software_df[f"{year}_active"] = new_column.astype(bool)
+        software_df[f"{year}_nlesc_initiated"] = (year == pd.DatetimeIndex(software_df["first_nlesc_commit"]).year) & software_df['nlesc_initiated']
+    
+    stats_df['Active Software Repos'] = stats_df['Year'].apply(lambda year: software_df[f"{year}_active"].sum())
+    stats_df[NLESC_INITIATED_REPOS] = stats_df['Year'].apply(lambda year: software_df[(software_df[f"{year}_nlesc_initiated"] == True)].shape[0])
+    stats_df[NLESC_CONTRIBUTED_REPOS] = stats_df['Active Software Repos'] - stats_df[NLESC_INITIATED_REPOS]
+    stats_df_long = stats_df.melt(id_vars=['Year'], value_vars=[NLESC_CONTRIBUTED_REPOS, NLESC_INITIATED_REPOS], var_name='Type', value_name='Number of Repositories')
+    create_yearly_stacked_bar_chart(
+        df=stats_df_long,
+        title="Active Software Repositories",
+        y_variable="Number of Repositories",
+        color_variable="Type",
+        dimensions=[800, 500]
+    ).save(output_dir / f"software_repos.{args.format}")
 
+    nlesc_initiated_df = software_df[software_df['nlesc_initiated']]
+    nlesc_contributed_df = software_df[~software_df['nlesc_initiated']]
+    statistics = {}
+    for df, key in zip([nlesc_initiated_df, nlesc_contributed_df], [NLESC_INITIATED_REPOS, NLESC_CONTRIBUTED_REPOS]):
+        statistics[key] = {
+            'average_contributors': df['contributors_total'].mean(),
+            'percentage_citable': (df['is_citable'].mean()) * 100,
+            'total_releases': df['releases'].sum(),
+            'mentions and citations': (df['mentions'] + df['citations']).sum(),
+            'average days since initial commit': (pd.Timestamp(year=2026, month=1, day=1) - pd.to_datetime(df['first_commit'])).dt.days.mean(),
+            'average days since last commit': (pd.Timestamp(year=2026, month=1, day=1) - pd.to_datetime(df['last_commit'])).dt.days.mean() 
+        }
+    stats_df = pd.DataFrame(statistics)
+    print(stats_df)
 
 
 
