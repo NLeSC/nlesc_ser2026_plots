@@ -2,7 +2,10 @@
 
 import pandas as pd
 import altair as alt
+import plotly.graph_objects as go
 from typing import Optional
+
+from nlesc_ser2026_plots import my_nlesc_theme
 
 
 def create_yearly_stacked_bar_chart(
@@ -158,7 +161,9 @@ def create_survey_chart(
     df: pd.DataFrame,
     x_variable: str,
     x_variable_2: str,
+    y_variable: Optional[str] = 'Question',
     dimensions: Optional[list[int]] = [700, 400],
+    x_scale: Optional[alt.Scale] = 6,
 ) -> int:
     """Create a survey chart from a DataFrame.
     Args:
@@ -172,9 +177,9 @@ def create_survey_chart(
     alt.themes.enable("my_nlesc_theme")
 
     # Create the survey chart
-    x_scale = alt.Scale(domain=[0, 6])
+    x_scale = alt.Scale(domain=[0, x_scale])
     chart = alt.Chart(df).mark_bar(size=40).encode(
-        y=alt.Y('Question:N', sort='-y', title=None, 
+        y=alt.Y(f'{y_variable}:N', sort='-y', title=None, 
                 axis=alt.Axis(
                     labels=True, 
                     grid=False,
@@ -329,3 +334,70 @@ def create_table_heatmap(
             text=title
         )
     )
+
+def create_spiderweb_chart(
+    df: pd.DataFrame,
+    theta_variable: str,
+    r_variable: str,
+    category_variable: Optional[str] = None,
+    title: Optional[str] = None,
+    dimensions: Optional[list[int]] = [700, 700],
+) -> alt.Chart:
+    """Create a spiderweb (radar) chart from a DataFrame.
+    Args:
+        df (pd.DataFrame): DataFrame with categories and values.
+        theta_variable (str): Name of the column to use for the angular axis.
+        r_variable (str): Name of the column to use for the radial axis.
+        dimensions (list[int], optional): Width and height of the chart. Defaults to [700, 400].
+    Returns:
+        alt.Chart: Altair chart object representing the spiderweb chart.
+    """
+
+    fig = go.Figure()
+    for category in df[category_variable].unique() if category_variable else [None]:
+        category_df = df[df[category_variable] == category] if category_variable else df
+        category_df = pd.concat([category_df, category_df.iloc[[0]]], ignore_index=False)
+
+        theme = my_nlesc_theme()['config']
+        # Create the spiderweb chart
+        fig.add_trace(go.Scatterpolar(
+            r=category_df[r_variable],  # Add a small offset to ensure visibility
+            theta=category_df[theta_variable],  # Add a small offset to ensure visibility
+            fill='toself',
+            name=category if category_variable else title,
+        ))
+
+    fig.update_layout(
+        template=None,
+        polar={
+            'radialaxis': {
+                'visible': True,
+                'showticklabels': False,
+                'ticks': '',
+                'range': [0, df[r_variable].max() * 1.1]
+            }
+        },
+        font_family=theme['axis']['titleFont'],
+        font_size=theme['axis']['titleFontSize'],
+        colorway=theme['range']['category'],
+        font_color='black',
+        font_weight='bold',
+        showlegend=bool(category_variable),
+        margin={'l': 40, 'r': 20, 't': 50, 'b': 40},
+        legend={'yanchor': 'top', 'y': 0.9, 'xanchor': 'right', 'x': 1.0},
+        title=title,
+        title_x=0.
+    )
+    return fig
+
+def save_radar_chart(
+        chart: go.Figure, 
+        output_file: str  
+        ):
+    """Save a radar chart as an HTML file.
+    Args:
+        chart (go.Figure): Plotly figure object representing the radar chart.
+        output_file (str): Path to save the output HTML file.
+    """
+    import plotly.io as pio
+    pio.write_html(chart, file=output_file, auto_open=False)

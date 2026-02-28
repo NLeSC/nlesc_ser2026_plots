@@ -19,7 +19,7 @@ from docx import Document
 from docx.shared import Pt
 
 # Import the bar chart function from our module
-from nlesc_ser2026_plots.bar_charts import create_pie_chart, create_sorted_bar_chart, create_survey_chart, create_table_heatmap, create_yearly_stacked_bar_chart, create_yearly_multi_bar_chart, create_yearly_stacked_bar_line_chart
+from nlesc_ser2026_plots.bar_charts import create_pie_chart, create_sorted_bar_chart, create_spiderweb_chart, create_survey_chart, create_table_heatmap, create_yearly_stacked_bar_chart, create_yearly_multi_bar_chart, create_yearly_stacked_bar_line_chart, save_radar_chart
 from nlesc_ser2026_plots.geo_charts import plot_netherlands_with_institutions
 from nlesc_ser2026_plots.reference_lists import create_refstrings_list
 from nlesc_ser2026_plots.line_charts import create_yearly_multi_line_chart
@@ -546,7 +546,61 @@ if os.path.exists(software_file):
             'average days since last commit': (pd.Timestamp(year=2026, month=1, day=1) - pd.to_datetime(df['last_commit'])).dt.days.mean() 
         }
     stats_df = pd.DataFrame(statistics)
-    print(stats_df)
+
+tech_survey_file = input_dir / "techSurvey.csv"
+if os.path.exists(tech_survey_file):
+
+    def calculate_scores(df, start_col, end_col, score_name):
+        if start_col in df.columns and end_col in df.columns:
+            df[score_name] = df.loc[:, start_col:end_col].mean(axis=1)
+            return df[score_name].sum(), df[df['Employed']][score_name].sum()
+        else:
+            print(f"Warning: Columns {start_col} to {end_col} not found in the DataFrame.")
+            return None, None
+
+    tech_survey_df = pd.read_csv(tech_survey_file, delimiter='|', encoding='utf-8')
+    tech_survey_df = tech_survey_df.map(lambda x: x.strip() if isinstance(x, str) else x)
+    tech_survey_df = tech_survey_df.replace({'Novice': 0, 'Competent': 1, 'Expert': 2})
+    employed = tech_survey_df['Employed']
+
+    nse_score_before, nse_score_after = calculate_scores(tech_survey_df, "High Energy Physics", "Computer Science", "NSE Score")
+    print(f"Total NSE Score before and after: {nse_score_before}\t{nse_score_after}")
+    envsus_score_before, envsus_score_after = calculate_scores(tech_survey_df, "Earth Systems", "Life & living systems", "EnvSus Score")
+    print(f"Total EnvSus Score before and after: {envsus_score_before}\t{envsus_score_after}")
+    ls_score_before, ls_score_after = calculate_scores(tech_survey_df, "Medical & Health Science", "Cognitive and Behavioral Sciences", "LS Score")
+    print(f"Total LS Score before and after: {ls_score_before}\t{ls_score_after}")
+    ssh_score_before, ssh_score_after = calculate_scores(tech_survey_df, "Economics Finance & Business", "Arts", "SSH Score")
+    print(f"Total SSH Score before and after: {ssh_score_before}\t{ssh_score_after}")
 
 
+    ai_score_before, ai_score_after = calculate_scores(tech_survey_df, "Deep Learning", "Federated Learning", "AI Score")
+    print(f"Total AI Score before and after: {ai_score_before}\t{ai_score_after}")
+    analytics_score_before, analytics_score_after = calculate_scores(tech_survey_df, "Information Visualization", "Dimensionality Reduction", "Analytics Score")
+    print(f"Total Analytics Score before and after: {analytics_score_before}\t{analytics_score_after}")
+    advanced_computing_score_before, advanced_computing_score_after = calculate_scores(tech_survey_df, "Low Power Computing", "Quantum Computing", "Advanced Computing Score")
+    print(f"Total Advanced Computing Score before and after: {advanced_computing_score_before}\t{advanced_computing_score_after}")
+    efficient_data_handling_score_before, efficient_data_handling_score_after = calculate_scores(tech_survey_df, "Relational Databases", "Data Assimilation", "Effcient Data Handling Score")
+    print(f"Total Efficient Data Handling Score before and after: {efficient_data_handling_score_before}\t{efficient_data_handling_score_after}")
+    software_quality_score_before, software_quality_score_after = calculate_scores(tech_survey_df, "Software Testing", "Ruby", "Software Quality Score")
+    print(f"Total Software Quality Score before and after: {software_quality_score_before}\t{software_quality_score_after}")
 
+    # Create survey chart for domain scores
+    domain_scores_df = pd.DataFrame({
+        'Type': ['Domain'] * 4 + ['Technology'] * 5,
+        'Topic': ['NSE', 'EnvSus', 'LS', 'SSH', 'Artificial Intelligence', 'Analytics', 'Advanced Computing', 'Efficient Data Handling', 'Software Quality'],
+        '2024 Result': [nse_score_before, envsus_score_before, ls_score_before, ssh_score_before, ai_score_before, analytics_score_before, advanced_computing_score_before, efficient_data_handling_score_before, software_quality_score_before],
+        'Current Projected Result': [nse_score_after, envsus_score_after, ls_score_after, ssh_score_after, ai_score_after, analytics_score_after, advanced_computing_score_after, efficient_data_handling_score_after, software_quality_score_after]
+    })
+
+    domain_scores_df_long = domain_scores_df.melt(id_vars=['Type','Topic'], var_name='Period', value_name='Score', value_vars=['2024 Result', 'Current Projected Result'])
+    domain_scores_df_long.to_json(output_dir / "tech_survey_domain_scores.json", orient='records', indent=4)
+
+    chart = create_spiderweb_chart(
+        df=domain_scores_df_long[domain_scores_df_long['Topic'].isin(['Artificial Intelligence', "Analytics", 'Advanced Computing', 'Efficient Data Handling', 'Software Quality', 'Software Quality'])],  # Filter to only include domain scores
+        theta_variable='Topic',
+        r_variable='Score',
+        category_variable='Period',
+        title="Technology Self-Assessment"
+    )
+    save_radar_chart(chart, output_dir / f"tech_survey_technology_scores.{args.format}")
+    
