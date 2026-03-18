@@ -184,7 +184,10 @@ def create_survey_chart(
                     labels=True, 
                     grid=False,
                     labelExpr="split(datum.label,'@')", 
-                    labelLimit=350)),
+                    labelLimit=1000,
+                    labelAlign='left',
+                    labelOffset = -60,
+                    labelPadding = -20)),
         yOffset = alt.Column(f'{x_variable_2}:N', title=None),
         color=alt.Color(f'{x_variable_2}:N', title=["Evaluation"," period"], sort='descending'),
         opacity=alt.condition(
@@ -216,7 +219,9 @@ def create_pie_chart(
     title: str,
     category_variable: str,
     value_variable: str,
+    opacity_variable: Optional[str] = None,
     dimensions: Optional[list[int]] = [700, 400],
+    label_fn: Optional[callable] = None,
 ) -> alt.Chart:
     """Create a pie chart from a DataFrame.
         df (pd.DataFrame): DataFrame with categories and values.
@@ -232,23 +237,70 @@ def create_pie_chart(
     alt.themes.enable("my_nlesc_theme")
 
     # Create the pie chart
-    chart = alt.Chart(df).mark_arc().encode(
-        theta=alt.Theta(f'{value_variable}:Q', stack=True),
-        color=alt.Color(f'{category_variable}:N', 
-                        sort='descending',
-                        legend=alt.Legend(title=f'{category_variable}',
-                                          labelExpr="split(datum.label,'@')", 
-                                          orient='right', 
-                                          titleAnchor='middle', 
-                                          offset=-50)),
-    ).properties(
-        width=dimensions[0],
-        height=dimensions[1],
-        title=alt.TitleParams(
-            text=title
+    if opacity_variable and opacity_variable in df.columns:
+
+#        df = df.copy()
+        df['_opacity'] = 0.0 # default lower opacity
+        for cat in df[category_variable].unique():
+            cat_df = df[df[category_variable] == cat]
+            sorted_idx = cat_df[value_variable].sort_values(ascending=False).index
+            n = len(sorted_idx)
+            for i, idx in enumerate(sorted_idx):
+                if i == 0:
+                    df.loc[idx, '_opacity'] = 1.0
+                else:
+                    df.loc[idx, '_opacity'] = max(0.1, (1.0 - ( i / (n - 1))) if n > 1 else 1.0)
+        _label_fn = label_fn if label_fn is not None else lambda cat, opac: f"{cat} {opac}"
+        df['_legend_label'] = df.apply(lambda row: _label_fn(row[category_variable], row[opacity_variable]), axis=1)
+
+        # Use a combined legend field so each legend item reflects both category color and slice opacity.
+        legend_df = df[['_legend_label', category_variable, '_opacity']].drop_duplicates()
+        legend_domain = legend_df['_legend_label'].tolist()
+        legend_opacity_range = legend_df['_opacity'].tolist()
+        category_values = df[category_variable].drop_duplicates().tolist()
+        palette = my_nlesc_theme()['config']['range']['category']
+        colored_categories = set(category_values) - set(['Empty', 'Unknown'])  # Exclude 'Empty' and 'Unknown' from the color mapping
+        category_color_map = {
+            category: palette[i % len(palette)]
+            for i, category in enumerate(colored_categories)
+        }
+        category_color_map['Empty'] = "#000000"  # Add a color for None category if needed
+        category_color_map['Unknown'] = "#8C8C8C"  # Add a color for 'Unknown' category if needed
+        legend_color_range = legend_df[category_variable].map(category_color_map).tolist()
+        print(legend_opacity_range)
+        print(legend_domain)
+        chart = alt.Chart(df).mark_arc().encode(
+            theta=alt.Theta(f'{value_variable}:Q'),
+            color=alt.Color('_legend_label:N',
+                    scale=alt.Scale(domain=legend_domain, range=legend_color_range),
+                    legend=alt.Legend(title=None,
+                              labelExpr="split(datum.label,'@')",
+                              orient='right',
+                              titleAnchor='middle',
+                              offset=-100)
+                    ),
+            opacity=alt.Opacity('_opacity:Q',
+                                legend=None)
         )
-    )
-    return chart
+    else:
+        chart = alt.Chart(df).mark_arc().encode(
+            theta=alt.Theta(f'{value_variable}:Q', stack=True),
+            color=alt.Color(f'{category_variable}:N',
+                            sort='descending',
+                            legend=alt.Legend(title=f'{category_variable}',
+                                              labelExpr="split(datum.label,'@')",
+                                              orient='right',
+                                              titleAnchor='middle',
+                                              offset=-50)
+                            )
+        )
+    return chart.properties(
+            width=dimensions[0],
+            height=dimensions[1],
+            title=alt.TitleParams(
+                    text=title
+                )
+            )
 
 def create_sorted_bar_chart(
     df: pd.DataFrame,

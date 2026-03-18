@@ -37,7 +37,8 @@ def parse_arguments():
 def list_references(
         output_file: Path, 
         df: pd.DataFrame, 
-        offset: int = 1    
+        offset: int = 1,
+        short_style: bool = False
     ) -> int:
     """
     List references from a DataFrame to a DOCX file.
@@ -49,9 +50,11 @@ def list_references(
         int: The next offset after listing the references.
     """ 
     pyalex_ids = df['OpenAlexID'].dropna().unique().tolist()
-    refstrings = tqdm.tqdm(create_refstrings_list(pyalex_ids))
+    refstrings = tqdm.tqdm(create_refstrings_list(pyalex_ids, short_style=short_style))
     document = Document()
     for refstring in sorted(refstrings):
+        if not refstring:
+            continue
         p = document.add_paragraph()
         p.add_run(f"{offset}\t").bold = True
         p.add_run(refstring)
@@ -204,7 +207,7 @@ if os.path.exists(calls_file):
     acceptance_rate_variable = 'Acceptance Rate (%)'
     df_yearly_sums[acceptance_rate_variable] = 100 * df_yearly_sums['Acceptances'] / df_yearly_sums['Submissions']
     # Aggregate over 'Year' column and drop the 'Call' column
-    calls_df['Call'] = calls_df['Call'].apply(lambda x: 'ASDI/OEC/ETEC' if x in ['ASDI', 'OEC', 'ETEC'] else 'Other')
+    calls_df['Call'] = calls_df['Call'].apply(lambda x: 'ASDI/ETEC/OEC/CIT' if x in ['ASDI', 'OEC', 'ETEC', 'CIT'] else 'Other')
     df_aggregated = calls_df.groupby(['Year', 'Call'], as_index=False).sum()
     df_aggregated[acceptance_rate_variable] = df_aggregated['Year'].map(df_yearly_sums.set_index('Year')[acceptance_rate_variable])
     bar_line_chart = create_yearly_stacked_bar_line_chart(
@@ -331,6 +334,7 @@ if not publications_df.empty:
     print(f"Total citations: {total_citations}")
     print(f"Total citations for NLeSC authored publications: {total_authored_citations}")
     print(f"Open access publications: {total_open_access} ({(total_open_access/total_publications)*100:.2f}%)")
+    print(f"Top 10 most cited publications: {publications_df[publications_df['authorship'] == 'NLeSC authored'].sort_values(by='citations', ascending=False).head(20)[['title', 'DOI']]}")
 
     offset = 1
     # Generate reference lists
@@ -353,6 +357,7 @@ if not publications_df.empty:
     else:
         offset += book_df.shape[0]
 
+offset = 1
 # Generate reference lists for preprints and reports
 preprint_df = load_and_filter_publications(input_dir / "preprint.csv")
 report_df = load_and_filter_publications(input_dir / "report.csv")
@@ -369,44 +374,41 @@ if not publications_df.empty:
     # Generate reference lists
     white_papers_file = output_dir / "white_papers.docx"
     if not white_papers_file.exists():
-        offset = list_references(white_papers_file, publications_df, offset)
-    else:        
-        offset += publications_df.shape[0]
+        list_references(white_papers_file, publications_df,
+                        offset=offset, short_style=True)
 
+offset = 1
 # Generate reference lists for press releases
 press_releases_df = load_and_filter_publications(input_dir / "press.csv")
 if not press_releases_df.empty:
     print(f"Total press releases: {press_releases_df.shape[0]}")
     press_releases_file = output_dir / "press_releases.docx"
     if not press_releases_file.exists():
-        offset = list_dataframe_rows(press_releases_file, press_releases_df, 
-                                     format_function=lambda row: f"{row['title']} ({row['year']}), {row.get('url', '')}",
-                                     offset=offset)
-    else:
-        offset += press_releases_df.shape[0]
+        list_dataframe_rows(press_releases_file, press_releases_df, 
+                            format_function=lambda row: f"{row['title']} ({row['year']}), {row.get('url', '')}",
+                            offset=offset)
 
+offset = 1
 # Generate reference lists data publications
 data_publications_df = load_and_filter_publications(input_dir / "data.csv")
 if not data_publications_df.empty:
     print(f"Total data publications: {data_publications_df.shape[0]}")
     data_publications_file = output_dir / "data_publications.docx"
     if not data_publications_file.exists():
-        offset = list_references(data_publications_file, data_publications_df, offset)
-    else:
-        offset += data_publications_df.shape[0]
+        list_references(data_publications_file, data_publications_df, offset)
 
+offset = 1
 # Generate reference lists for blog posts
 blog_posts_df = load_and_filter_publications(input_dir / "blog.csv", filter_external=False)
 if not blog_posts_df.empty:
     print(f"Total blog posts: {blog_posts_df.shape[0]}")
     blog_posts_file = output_dir / "blog_posts.docx"
     if not blog_posts_file.exists():
-        offset = list_dataframe_rows(blog_posts_file, blog_posts_df, 
-                                    format_function=lambda row: f"{row['author']}. {row['title']} ({pd.to_datetime(row['date']).year}), {row.get('url', '')}",
-                                    offset=offset)
-    else:
-        offset += blog_posts_df.shape[0]
+        list_dataframe_rows(blog_posts_file, blog_posts_df, 
+                            format_function=lambda row: f"{row['author']}. {row['title']} ({pd.to_datetime(row['date']).year}), {row.get('url', '')}",
+                            offset=offset)
 
+offset = 1
 # Generate reference lists for theses
 theses_df = load_and_filter_publications(input_dir / "thesis.csv", filter_external=False)
 if not theses_df.empty:
@@ -424,21 +426,55 @@ if not theses_df.empty:
         offset = list_dataframe_rows(theses_file, master_theses_df, format_function=reference_builder,offset=offset, document=document)
         offset = list_dataframe_rows(theses_file, bachelor_theses_df, format_function=reference_builder, offset=offset, document=document)
         document.save(theses_file)
-    else:
-        offset += theses_df.shape[0]
 
+offset = 1
 # Generate reference lists for workshops
 workshops_df = load_and_filter_publications(input_dir / "workshop.csv", filter_external=False)
 if not workshops_df.empty:
     print(f"Total workshops: {workshops_df.shape[0]}")
     workshops_file = output_dir / "workshops.docx"
     if not workshops_file.exists():
-        offset = list_dataframe_rows(workshops_file, workshops_df, 
-                                    format_function=lambda row: f"{row['title']} ({row['year']}), {row.get('url', '')}",
-                                    offset=offset)
-    else:
-        offset += workshops_df.shape[0]
+        list_dataframe_rows(workshops_file, workshops_df, 
+                            format_function=lambda row: f"{row['title']} ({row['year']}), {row.get('url', '')}",
+                            offset=offset)
 
+# Generate reference lists for marks of recognition
+marks_df = load_and_filter_publications(input_dir / "marksOfRecognition.csv", filter_external=False)
+if not marks_df.empty:
+    print(f"Total marks of recognition: {marks_df.shape[0]}")
+    marks_file = output_dir / "marks_of_recognition.docx"
+    if not marks_file.exists():
+        doc = Document()
+        memberships_df = marks_df[marks_df["Type"].isin(["Member", "Chair", "Co-chair"])]
+        def format_membership(row):
+            url = row.get('URL', 'none')
+            retval = f"{row['Employee(s)']} was {row['Type'].lower()} of the {row['Description']} in {row['Year']}"
+            return f"{retval}, {url}" if url != 'none' else retval
+        list_dataframe_rows(marks_file, memberships_df, 
+                            format_function=format_membership,
+                            offset=offset,
+                            document=doc)
+
+        speaker_df = marks_df[marks_df["Type"].isin(["Invited Speaker", "Panelist", "Session Chair"])]
+        def format_speakership(row):
+            url = row.get('URL', 'none')
+            retval = f"{row['Employee(s)']} was {row['Type'].lower()} at the {row['Description']} in {row['Year']}"
+            return f"{retval}, {url}" if url != 'none' else retval
+        list_dataframe_rows(marks_file, speaker_df, 
+                            format_function=format_speakership,
+                            offset=offset,
+                            document=doc)
+        
+        awards_df = marks_df[marks_df["Type"] == "Award"]
+        def format_award(row):
+            url = row.get('URL', 'none')
+            retval = f"{row['Employee(s)']} received the {row['Description']} in {row['Year']}"
+            return f"{retval}, {url}" if url != 'none' else retval
+        list_dataframe_rows(marks_file, awards_df, 
+                            format_function=format_award,
+                            offset=offset,
+                            document=doc)
+        doc.save(marks_file)
 
 LA_surveys_file = input_dir / "LASurveyScores.csv"
 if os.path.exists(LA_surveys_file):
@@ -450,7 +486,8 @@ if os.path.exists(LA_surveys_file):
                                             var_name="period", value_name="score")
         replacement_values = {"average": "2019-2025", "2018 average": "2013-2018"}
         section_df_long["period"] = section_df_long["period"].replace(replacement_values)
-        section_df_long['Question'] = section_df_long['Question'].apply(lambda x: '@'.join(wrap(x, 40)))
+        section_df_long['Question'] = section_df_long['Question'].apply(lambda x: '@'.join(wrap(x, 90)))
+        section_df_long = section_df_long[~section_df_long['Question'].str.startswith('The collaboration with the eScience Center')]
         num_questions = section_df_long['Question'].nunique()
         chart = create_survey_chart(
             df=section_df_long,
@@ -473,6 +510,15 @@ if os.path.exists(training_data_file):
     chart.save(output_dir / f"training_attendance.{args.format}")
 
     training_df_regional = training_df[training_df["Topic"] == "Attendees region"].drop(columns=["Topic"]).melt(id_vars="Indicator", var_name="Year").pivot_table(columns="Indicator", values='value', index='Year').reset_index()
+    training_df_regional_yearly = training_df_regional.melt(id_vars="Year", var_name="Region", value_name="Attendees")
+    training_df_regional_yearly['Region'] = training_df_regional_yearly['Region'].str.replace('Attendees ', '', regex=False)
+    chart = create_yearly_stacked_bar_chart(   training_df_regional_yearly,
+                                            title="Attendance per region",
+                                            y_variable="Attendees",
+                                            color_variable="Region",
+                                            dimensions=[800, 500])
+    chart.save(output_dir / f"training_attendance_region_yearly.{args.format}")
+
     training_df_year_average = training_df_regional.mean(numeric_only=True, axis=0).reset_index()
     training_df_year_average.columns = ["Region", "Attendees"]
     training_df_year_average['Region'] = training_df_year_average['Region'].str.replace('Attendees ', '', regex=False)
@@ -482,21 +528,34 @@ if os.path.exists(training_data_file):
                                 value_variable="Attendees")
     chart.save(output_dir / f"training_attendance_region.{args.format}")
 
-    training_df_career_stage = training_df[training_df["Topic"] == "Attendees domain"].drop(columns=["Topic"]).melt(id_vars="Indicator", var_name="Year").pivot_table(columns="Indicator", values='value', index='Year').reset_index()
-    training_df_career_stage_year_average = training_df_career_stage.mean(numeric_only=True, axis=0).reset_index()
-    training_df_career_stage_year_average.columns = ["Domain", "Attendees"]
-    training_df_career_stage_year_average['Domain'] = training_df_career_stage_year_average['Domain'].str.replace('Attendees ', '', regex=False)
+    training_df_domain = training_df[training_df["Topic"] == "Attendees domain"].drop(columns=["Topic"]).melt(id_vars="Indicator", var_name="Year").pivot_table(columns="Indicator", values='value', index='Year').reset_index()
+    training_df_domain_year_average = training_df_domain.mean(numeric_only=True, axis=0).reset_index()
+    training_df_domain_year_average.columns = ["Domain", "Attendees"]
+    training_df_domain_year_average['Domain'] = training_df_domain_year_average['Domain'].str.replace('Attendees ', '', regex=False)
     domain_mapping = {'LSH': 'Life Sciences', 
                       'SSH': 'Social Sciences@and Humanities',
                       'NES': 'Natural Sciences@and Engineering', 
                       'ENV': 'Environment@and Sustainability'}
-    training_df_career_stage_year_average['Domain'] = training_df_career_stage_year_average['Domain'].map(domain_mapping)
-
-    chart = create_pie_chart(   training_df_career_stage_year_average, 
+    training_df_domain_year_average['Domain'] = training_df_domain_year_average['Domain'].map(domain_mapping)
+    chart = create_pie_chart(   training_df_domain_year_average, 
                                 title="Average attendance per domain",
                                 category_variable="Domain",
                                 value_variable="Attendees")
     chart.save(output_dir / f"training_attendance_domain.{args.format}")
+
+    training_df_position = training_df[training_df["Topic"] == "Attendees position"].drop(columns=["Topic"]).melt(id_vars="Indicator", var_name="Year").pivot_table(columns="Indicator", values='value', index='Year').reset_index()
+    training_df_position_year_average = training_df_position.mean(numeric_only=True, axis=0).reset_index()
+    training_df_position_year_average.columns = ["Position", "Attendees"]
+    position_mapping = {'Attendees PhD candidate': 'PhD Students',
+                        'Attendees Research staff (Postdoc, (ass/assoc) professor)': 'Research Staff',
+                        'Attendees Other (support staff, RSE, industry, goverment)': 'Other'
+                        }
+    training_df_position_year_average['Position'] = training_df_position_year_average['Position'].map(position_mapping)
+    chart = create_pie_chart(   training_df_position_year_average, 
+                                title="Average attendance per career stage",
+                                category_variable="Position",
+                                value_variable="Attendees")
+    chart.save(output_dir / f"training_attendance_career_stage.{args.format}")
 
     training_df_survey = training_df[training_df["Topic"] == "Survey"].drop(columns=["Topic"]).melt(id_vars="Indicator", var_name="Year").reset_index()
     training_df_survey['Indicator'] = training_df_survey['Indicator'].apply(lambda x: '@'.join(wrap(x, 40)))
@@ -553,7 +612,7 @@ if os.path.exists(tech_survey_file):
     def calculate_scores(df, start_col, end_col, score_name):
         if start_col in df.columns and end_col in df.columns:
             df[score_name] = df.loc[:, start_col:end_col].mean(axis=1)
-            return df[score_name].sum(), df[df['Employed']][score_name].sum()
+            return df[score_name].quantile(q=0.8), df[df['Employed']][score_name].quantile(q=0.8)
         else:
             print(f"Warning: Columns {start_col} to {end_col} not found in the DataFrame.")
             return None, None
@@ -561,28 +620,20 @@ if os.path.exists(tech_survey_file):
     tech_survey_df = pd.read_csv(tech_survey_file, delimiter='|', encoding='utf-8')
     tech_survey_df = tech_survey_df.map(lambda x: x.strip() if isinstance(x, str) else x)
     tech_survey_df = tech_survey_df.replace({'Novice': 0, 'Competent': 1, 'Expert': 2})
+
     employed = tech_survey_df['Employed']
 
     nse_score_before, nse_score_after = calculate_scores(tech_survey_df, "High Energy Physics", "Computer Science", "NSE Score")
-    print(f"Total NSE Score before and after: {nse_score_before}\t{nse_score_after}")
     envsus_score_before, envsus_score_after = calculate_scores(tech_survey_df, "Earth Systems", "Life & living systems", "EnvSus Score")
-    print(f"Total EnvSus Score before and after: {envsus_score_before}\t{envsus_score_after}")
     ls_score_before, ls_score_after = calculate_scores(tech_survey_df, "Medical & Health Science", "Cognitive and Behavioral Sciences", "LS Score")
-    print(f"Total LS Score before and after: {ls_score_before}\t{ls_score_after}")
     ssh_score_before, ssh_score_after = calculate_scores(tech_survey_df, "Economics Finance & Business", "Arts", "SSH Score")
-    print(f"Total SSH Score before and after: {ssh_score_before}\t{ssh_score_after}")
 
 
     ai_score_before, ai_score_after = calculate_scores(tech_survey_df, "Deep Learning", "Federated Learning", "AI Score")
-    print(f"Total AI Score before and after: {ai_score_before}\t{ai_score_after}")
     analytics_score_before, analytics_score_after = calculate_scores(tech_survey_df, "Information Visualization", "Dimensionality Reduction", "Analytics Score")
-    print(f"Total Analytics Score before and after: {analytics_score_before}\t{analytics_score_after}")
     advanced_computing_score_before, advanced_computing_score_after = calculate_scores(tech_survey_df, "Low Power Computing", "Quantum Computing", "Advanced Computing Score")
-    print(f"Total Advanced Computing Score before and after: {advanced_computing_score_before}\t{advanced_computing_score_after}")
     efficient_data_handling_score_before, efficient_data_handling_score_after = calculate_scores(tech_survey_df, "Relational Databases", "Data Assimilation", "Effcient Data Handling Score")
-    print(f"Total Efficient Data Handling Score before and after: {efficient_data_handling_score_before}\t{efficient_data_handling_score_after}")
     software_quality_score_before, software_quality_score_after = calculate_scores(tech_survey_df, "Software Testing", "Ruby", "Software Quality Score")
-    print(f"Total Software Quality Score before and after: {software_quality_score_before}\t{software_quality_score_after}")
 
     # Create survey chart for domain scores
     domain_scores_df = pd.DataFrame({
@@ -604,3 +655,26 @@ if os.path.exists(tech_survey_file):
     )
     save_radar_chart(chart, output_dir / f"tech_survey_technology_scores.{args.format}")
     
+infraUseFile = input_dir / "projectInfraUse.csv"
+if os.path.exists(infraUseFile):
+    infra_use_df = pd.read_csv(infraUseFile, delimiter='|', encoding='utf-8').sort_values(by=['category', 'all projects'], ascending=[True, False])
+    def label_fn(category, detail):
+        if category == "Empty":
+            return "None"
+        if category == "SURF":
+            return f"SURF {detail}"
+        if category == "Local":
+            return f"{detail}" 
+        if detail == "Other":
+            return f"{category}"
+        return f"{detail}"
+    chart = create_pie_chart(
+        df=infra_use_df,
+        title="Infrastructure Usage",
+        value_variable="all projects",
+        category_variable="category",
+        opacity_variable="detail",
+        dimensions=[800, 500],
+        label_fn=label_fn
+    )
+    chart.save(output_dir / f"infrastructure_usage.{args.format}")

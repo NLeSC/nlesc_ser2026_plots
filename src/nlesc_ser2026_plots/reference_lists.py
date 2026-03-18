@@ -19,7 +19,8 @@ def make_family_name_initials(display_name: str) -> str:
 
 def create_refstrings_list(
     ids: list[str],
-    authors_limit: int = 10
+    authors_limit: int = 10,
+    short_style: bool = False
 ):
     """Create a reference string list from a list of pyalex IDs.
     Args:
@@ -35,23 +36,31 @@ def create_refstrings_list(
         authors = paper["authorships"]
         author_str = ", ".join([make_family_name_initials(author['author']['display_name']) for
  author in authors[:authors_limit]])
+        if len(authors) > authors_limit:
+            author_str += ", et al."
         year = datetime.datetime.strptime(paper["publication_date"], "%Y-%m-%d").year
         title = paper["title"]
-        venue = "Unknown Venue"
-        if paper.get("primary_location") and paper["primary_location"].get("source"):
-            venue = paper.get("primary_location", {}).get("source", {}).get("display_name", "Unknown Venue")
-        biblio = paper.get("biblio", {}).get("volume", "")
-        issue = paper.get("biblio", {}).get("issue", "")
-        biblio = f"{biblio}({issue})" if issue else biblio
-        first_page = paper.get("biblio", {}).get("first_page", "")
-        last_page = paper.get("biblio", {}).get("last_page", "")
-        if first_page and last_page:
-            biblio = f"{biblio}, {first_page}-{last_page}"
-        elif first_page:
-            biblio = f"{biblio}, {first_page}"
-
         doi = paper.get("doi", "")
-        refstring = f"{author_str} ({year}). {title}. {venue}, {biblio}. {doi}"
-        # Remove any xml tags and souble spaces from refstring
+        if not short_style:
+            venue = ""
+            if paper.get("primary_location") and paper["primary_location"].get("source"):
+                venue = paper.get("primary_location", {}).get("source", {}).get("display_name", "")
+            if not venue:
+                venue = paper.get("primary_location", {}).get("raw_source_name", "")
+            if not venue:
+                yield ""
+            biblio = paper.get("biblio", {}).get("volume", "")
+            issue = paper.get("biblio", {}).get("issue", "")
+            biblio = f"{biblio}({issue})" if issue else biblio
+            first_page = paper.get("biblio", {}).get("first_page", "")
+            last_page = paper.get("biblio", {}).get("last_page", "")
+            if first_page and last_page:
+                biblio = f"{biblio}, {first_page}-{last_page}"
+            elif first_page:
+                biblio = f"{biblio}, {first_page}"
+            refstring = f"{author_str} ({year}). {title}. {venue}, {biblio}. {doi}"
+        else:
+            refstring = f"{author_str} ({year}). {title}. {doi}"
+        # Remove any xml tags and double spaces from refstring
         refstring = re.sub(r"\s+", " ", re.sub(r"<[^>]+>", "", refstring)).strip()
         yield refstring
