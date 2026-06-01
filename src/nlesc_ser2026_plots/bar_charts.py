@@ -29,15 +29,17 @@ def create_yearly_stacked_bar_chart(
     alt.themes.enable("my_nlesc_theme")
 
     year_col = df.index.name if df.index.name is not None else 'Year'
-    
+    x_redux = df[year_col].nunique() > 10
+
+
     # Create the stacked bar chart
     chart = alt.Chart(df).transform_joinaggregate(
         order=f'sum({y_variable})',
         groupby=[f'{color_variable}']
     ).mark_bar().encode(
-        x=alt.X(f'{year_col}:O', title='Year'),
+        x=alt.X(f'{year_col}:O', title='Year').axis(labelExpr="datum.value % 2 === 1 ? datum.value : ''") if x_redux else alt.X(f'{year_col}:O', title='Year'),
         y=alt.Y(f'{y_variable}:Q', axis=alt.Axis(title=y_variable, labels=True, grid=True)),
-        color=alt.Color(f'{color_variable}:N', sort=alt.SortField(field='order', order='descending')).legend(title=color_variable,labelExpr="split(datum.label,'@')"),
+        color=alt.Color(f'{color_variable}:N', sort=alt.SortField(field='order', order='descending')).legend(title=None,labelExpr="split(datum.label,'@')"),
         order=alt.Order('order:Q', sort='descending')  # Ensure proper stacking order
     ).properties(
         width=dimensions[0],
@@ -62,6 +64,8 @@ def create_yearly_bar_line_chart(
     """
     
     year_col = df.index.name if df.index.name is not None else 'Year'
+#    if df['Year'].count() > 10:
+#        dimensions[0] += (df['Year'].count() - 10) * 20  # Increase width for more years
 
     alt.themes.enable("my_nlesc_theme")
     # Create bar chart for Submissions
@@ -93,8 +97,9 @@ def create_yearly_stacked_bar_line_chart(
     df: pd.DataFrame,
     title: Optional[str],
     y_variable_left: str,
-    y_variable_right: Optional[str],
+    y_variable_right: str,
     color_variable: str,
+    y_right_max: Optional[float] = None,
     dimensions: Optional[list[int]] = [700, 400],
 ) -> alt.Chart:
     """Create a bar and line chart showing submissions and acceptance rate over years.
@@ -107,13 +112,14 @@ def create_yearly_stacked_bar_line_chart(
     bar = alt.Chart(df).mark_bar().encode(
         x=alt.X(f'{year_col}:O'),
         y=alt.Y(f'{y_variable_left}:Q', title=y_variable_left),
-        color=alt.Color(f'{color_variable}:N', sort=alt.SortField(field=f'sum({y_variable_left})', order='descending')).legend(title=color_variable,labelExpr="split(datum.label,'@')"),
+        color=alt.Color(f'{color_variable}:N', sort=alt.SortField(field=f'sum({y_variable_left})', order='descending')).legend(
+            title=None,labelExpr="split(datum.label,'@')"),
         order=alt.Order(f'sum{y_variable_left}:Q', sort='descending')  # Ensure proper stacking order
     )
     # Create line chart for Acceptance Rate
     line = alt.Chart(df).mark_line(color='#380339', strokeWidth=3).encode(
         x=alt.X(f'{year_col}:O'),
-        y=alt.Y(f'{y_variable_right}:Q', title=y_variable_right, scale=alt.Scale(domain=[0, 100])).axis(titleColor='#380339')
+        y=alt.Y(f'{y_variable_right}:Q', title=y_variable_right, scale=alt.Scale(domain=[0, y_right_max])).axis(titleColor='#380339')
     )
 
     # Combine bar and line charts with dual y-axes
@@ -162,8 +168,8 @@ def create_survey_chart(
     x_variable: str,
     x_variable_2: str,
     y_variable: Optional[str] = 'Question',
+    x_scale: Optional[alt.Scale] = 5.5,
     dimensions: Optional[list[int]] = [700, 400],
-    x_scale: Optional[alt.Scale] = 6,
 ) -> int:
     """Create a survey chart from a DataFrame.
     Args:
@@ -184,12 +190,12 @@ def create_survey_chart(
                     labels=True, 
                     grid=False,
                     labelExpr="split(datum.label,'@')", 
-                    labelLimit=1000,
+                    labelLimit=0,
                     labelAlign='left',
                     labelOffset = -60,
                     labelPadding = -20)),
         yOffset = alt.Column(f'{x_variable_2}:N', title=None),
-        color=alt.Color(f'{x_variable_2}:N', title=["Evaluation"," period"], sort='descending'),
+        color=alt.Color(f'{x_variable_2}:N', title=None, sort='descending'),
         opacity=alt.condition(
             alt.datum[x_variable_2] == '2013-2018', 
             alt.value(0.4),  # More transparent for 2013-2018
@@ -200,10 +206,11 @@ def create_survey_chart(
                 axis=alt.Axis(
                     title=None, 
                     labels=True, 
+                    labelLimit=0,
                     grid=True,
                     gridColor='darkgray', 
-                    tickCount=6, 
-                    labelExpr="datum.value == 1 ? 'Strongly disagree' : datum.value == 2 ? 'Disagree' : datum.value == 3 ? 'Neutral' : datum.value == 4 ? 'Agree' : datum.value == 5 ? 'Strongly agree' : ''")),
+                    tickCount=5,
+                    labelExpr="split(datum.value == 1 ? 'Strongly@disagree' : datum.value == 2 ? 'Disagree' : datum.value == 3 ? 'Neutral' : datum.value == 4 ? 'Agree' : datum.value == 5 ? 'Strongly@agree' : '', '@')")),
     ).properties(
         width=dimensions[0],
         height=dimensions[1],
@@ -220,8 +227,8 @@ def create_pie_chart(
     category_variable: str,
     value_variable: str,
     opacity_variable: Optional[str] = None,
-    dimensions: Optional[list[int]] = [700, 400],
     label_fn: Optional[callable] = None,
+    dimensions: Optional[list[int]] = [700, 400],
 ) -> alt.Chart:
     """Create a pie chart from a DataFrame.
         df (pd.DataFrame): DataFrame with categories and values.
@@ -239,7 +246,6 @@ def create_pie_chart(
     # Create the pie chart
     if opacity_variable and opacity_variable in df.columns:
 
-#        df = df.copy()
         df['_opacity'] = 0.0 # default lower opacity
         for cat in df[category_variable].unique():
             cat_df = df[df[category_variable] == cat]
@@ -256,7 +262,6 @@ def create_pie_chart(
         # Use a combined legend field so each legend item reflects both category color and slice opacity.
         legend_df = df[['_legend_label', category_variable, '_opacity']].drop_duplicates()
         legend_domain = legend_df['_legend_label'].tolist()
-        legend_opacity_range = legend_df['_opacity'].tolist()
         category_values = df[category_variable].drop_duplicates().tolist()
         palette = my_nlesc_theme()['config']['range']['category']
         colored_categories = set(category_values) - set(['Empty', 'Unknown'])  # Exclude 'Empty' and 'Unknown' from the color mapping
@@ -267,8 +272,6 @@ def create_pie_chart(
         category_color_map['Empty'] = "#000000"  # Add a color for None category if needed
         category_color_map['Unknown'] = "#8C8C8C"  # Add a color for 'Unknown' category if needed
         legend_color_range = legend_df[category_variable].map(category_color_map).tolist()
-        print(legend_opacity_range)
-        print(legend_domain)
         chart = alt.Chart(df).mark_arc().encode(
             theta=alt.Theta(f'{value_variable}:Q'),
             color=alt.Color('_legend_label:N',
@@ -290,8 +293,8 @@ def create_pie_chart(
                             legend=alt.Legend(title=f'{category_variable}',
                                               labelExpr="split(datum.label,'@')",
                                               orient='right',
-                                              titleAnchor='middle',
-                                              offset=-50)
+                                              titleAnchor='start',
+                                              offset=-100)
                             )
         )
     return chart.properties(
@@ -324,7 +327,7 @@ def create_sorted_bar_chart(
 
     # Create the sorted bar chart
     chart = alt.Chart(df).mark_bar().encode(
-        x=alt.X(f'{category_variable}:N', sort='-y', title=None, axis=alt.Axis(labelExpr="split(datum.label,'@')", labelAngle=45)),
+        x=alt.X(f'{category_variable}:N', sort='-y', title=None, axis=alt.Axis(labelAngle=45, labelLimit=0)),
         y=alt.Y(f'{value_variable}:Q', title=value_variable),
         color=alt.Color(f'Category:N', title=None)
     ).properties(
@@ -365,7 +368,7 @@ def create_table_heatmap(
 
     base = alt.Chart(df).encode(
         x=alt.X(f'{x_variable}:O', title=None, scale=alt.Scale(domain=x_range, paddingInner=0) if x_range else None),
-        y=alt.Y(f'{y_variable}:N', title=None, axis=alt.Axis(labelExpr="split(datum.label,'@')", labelLimit=350)),
+        y=alt.Y(f'{y_variable}:N', title=None, axis=alt.Axis(labelExpr="split(datum.label,'@')", labelLimit=600)),
     )
 
     # Create the table heatmap

@@ -27,23 +27,30 @@ def my_nlesc_theme():
             },
             "axis": {
                 "labelFont": "Calibri",
-                "labelFontSize": 20,
+                "labelFontSize": 22,
                 "titleFont": "Nunito",
                 "titleFontSize": 26,
             },
             "legend": {
                 "labelFont": "Calibri",
-                "labelFontSize": 20,
+                "labelFontSize": 22,
+                "labelLimit": 0,
                 "titleFont": "Nunito",
                 "titleFontSize": 24,
+                "orient": "top",
+                "direction": "vertical",
+                "titleAnchor": "left",
             },
             "axisX": {
                 "labelAngle": 0,
             },
+            "axisY": {
+                "tickCount": 5,
+            },
             "range": {
                 "category": [
-                    "#009DDD", "#380339", "#FFB313", "#0AC711", 
-                    "#29295D", "#6A4C93", "#F87224", "#273C0C"
+                    "#009DDD", "#380339", "#FFB313", "#40a489", 
+                    "#6A4C93", "#F87224", "#0AC711"
                 ]
             },
             "facet_cell": {

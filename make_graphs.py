@@ -121,30 +121,7 @@ if not input_dir.is_dir():
 output_dir = Path(args.output_dir)
 output_dir.mkdir(parents=True, exist_ok=True)
 
-# Process FTE data
-fte_file = input_dir / "example_fte_data.csv"
-if os.path.exists(fte_file):
-    df_fte = pd.read_csv(fte_file)
-    color_variable = 'Activity'
-    value_variable = 'Expenditure (FTE)'
-    df_long = df_fte.melt(id_vars=['Year'], var_name=color_variable, value_name=value_variable)
-    df_long['Activity'] = df_long['Activity'].apply(lambda x: '@'.join(wrap(x, 16)))
-    chart = create_yearly_stacked_bar_chart(
-        df=df_long,
-        y_variable=value_variable,
-        color_variable=color_variable,
-        title="FTE Allocation per Activity",
-        dimensions=[800, 500]
-    )
-    chart.save(output_dir / f"fte_allocation_chart.{args.format}")
-
-
-# Make map of spatial collaborations diversity
-cities_file = input_dir / "dutch_cities.csv"
-if os.path.exists(cities_file):
-    cities_df = pd.read_csv(cities_file)
-    geo_chart = plot_netherlands_with_institutions(cities_df)
-    geo_chart.save(f"netherlands_institutions.{args.format}")
+bar_chart_dimsensions = [600, 600]
 
 # Make bar charts for funding data
 finance_file = input_dir / "finance.csv"
@@ -153,29 +130,45 @@ if os.path.exists(finance_file):
     income_cols = [c for c in finance_df.columns if c.endswith("income")]
     value_variable = 'Income (M€)'
     df_long = finance_df.melt(id_vars=['Year'], value_vars=income_cols, var_name=INCOME_STREAM, value_name=value_variable)
-    df_long[INCOME_STREAM] = df_long[INCOME_STREAM].str.replace('income', '').apply(lambda x: '@'.join(wrap(x, 10)))
+    df_long[INCOME_STREAM] = df_long[INCOME_STREAM].str.replace('income', '').apply(lambda x: '@'.join(wrap(x, 100)))
     df_long[value_variable] = df_long[value_variable] / 1_000_000
     chart = create_yearly_stacked_bar_chart(
         df=df_long,
         y_variable=value_variable,
         color_variable=INCOME_STREAM,
         title="Yearly income",
-        dimensions=[800, 500]
+        dimensions=bar_chart_dimsensions
     )
     chart.save(output_dir / f"funding_data_chart.{args.format}")
     ACTIVITY = "Activity"
     expenditure_cols = [c for c in finance_df.columns if c.startswith("FTE")]
     value_variable = 'Expenditure (FTE)'
     df_long = finance_df.melt(id_vars=['Year'], value_vars=expenditure_cols, var_name=ACTIVITY, value_name=value_variable)
-    df_long[ACTIVITY] = df_long[ACTIVITY].str.replace('FTE', '').apply(lambda x: '@'.join(wrap(x, 13)))
+    df_long[ACTIVITY] = df_long[ACTIVITY].str.replace('FTE', '').apply(lambda x: '@'.join(wrap(x, 100)))
     chart = create_yearly_stacked_bar_chart(
         df=df_long,
         y_variable=value_variable,
         color_variable=ACTIVITY,
         title="Expenditure per Activity",
-        dimensions=[800, 500]
+        dimensions=bar_chart_dimsensions
     )
     chart.save(output_dir / f"fte_allocation_chart.{args.format}")
+    df_normalized = finance_df.copy()
+    for col in expenditure_cols:
+        df_normalized[col] = 100 * df_normalized[col] / finance_df[expenditure_cols].sum(axis=1)
+    df_normalized["Total FTE"] = finance_df[expenditure_cols].sum(axis=1)
+    df_long = df_normalized.melt(id_vars=['Year', 'Total FTE'], value_vars=expenditure_cols, var_name=ACTIVITY, value_name='Expenditure (%)')
+    df_long[ACTIVITY] = df_long[ACTIVITY].str.replace('FTE', '').apply(lambda x: '@'.join(wrap(x, 100)))
+    chart = create_yearly_stacked_bar_line_chart(
+        df=df_long,
+        y_variable_left='Expenditure (%)',
+        y_variable_right='Total FTE',
+        y_right_max=80,
+        color_variable=ACTIVITY,
+        title="Expenditure per Activity (normalized)",
+        dimensions=bar_chart_dimsensions
+    )
+    chart.save(output_dir / f"fte_allocation_normalized_chart.{args.format}")
 
 # Make bar charts for headcount data
 hr_file = input_dir / "contracts.csv"
@@ -192,9 +185,21 @@ if os.path.exists(hr_file):
         y_variable=value_variable,
         color_variable=color_variable,
         title="Number of Employees",
-        dimensions=[800, 500]
+        dimensions=bar_chart_dimsensions
     )
     chart.save(output_dir / f"headcount_data_chart.{args.format}")
+
+# Make snapshot piechart of FTE data
+snapshot_hr_file = input_dir / "contractsNow.csv"
+if os.path.exists(snapshot_hr_file):
+    snapshot_hr_df = pd.read_csv(snapshot_hr_file, delimiter='|', encoding='utf-8')
+    chart = create_pie_chart(
+        df=snapshot_hr_df,
+        title="",
+        category_variable="Group",
+        value_variable="FTE"
+    )
+    chart.save(output_dir / f"FTE_snapshot_now.{args.format}")
 
 
 # Make bar-line charts for calls data
@@ -215,8 +220,9 @@ if os.path.exists(calls_file):
         title="Submissions and Acceptance Rates",
         y_variable_left="Submissions",
         y_variable_right=acceptance_rate_variable,
+        y_right_max=100,
         color_variable="Call",
-        dimensions=[800, 500]
+        dimensions=bar_chart_dimsensions
     )
     bar_line_chart.save(output_dir / f"calls_bar_line_chart.{args.format}")
 
@@ -236,7 +242,7 @@ if os.path.exists(calls_file):
         title="Requested vs. Provided Budget",
         y_variable=value_variable,
         offset_variable=offset_variable,
-        dimensions=[800, 500]
+        dimensions=bar_chart_dimsensions
     )
     chart.save(output_dir / f"calls_multi_bar_chart.{args.format}")
 
@@ -263,7 +269,7 @@ if os.path.exists(calls_file):
         category_variable='Institute',
         value_variable=BUDGET_COLUMN,
         title='Share of requested budget per institute',
-        dimensions=[600, 600]
+        dimensions=[800, 600]
     )
     chart.save(output_dir / f"calls_institutes_pie_chart.{args.format}")
 
@@ -287,9 +293,15 @@ if os.path.exists(projects_file):
         y_variable="Income (kEUR)",
         color_variable="Type",
         title="External Acquisition Income",
-        dimensions=[800, 500]
+        dimensions=bar_chart_dimsensions
     )
     external_acquisition_chart.save(output_dir / f"external_acquisition_per_year.{args.format}")
+    print(ext_proj_df.index.to_list())
+    ext_proj_df['Project'] = [s.replace('-', ' ').title() if isinstance(s, str) else s for s in ext_proj_df.index.to_list()]
+    ext_proj_df['INCOME'] = ext_proj_df['INCOME'] / 1000  # Convert to kEUR
+    ext_proj_df.rename(columns={'call_year': 'Year', 'TYPE': 'Type', 'INCOME': 'Income (kEUR)'}, inplace=True)
+    ext_proj_df = ext_proj_df[ext_proj_df['Type'].isin(['Grant', 'Contract Research'])]
+    ext_proj_df[['Year', 'Project', 'Type', 'Income (kEUR)', 'NORM_PI_ORG']].to_csv(output_dir / "external_acquisition_per_year.csv", index=False)
 
 def load_and_filter_publications(file_path: Path, filter_external: bool = True) -> pd.DataFrame:
     """Load publications CSV and filter out EXTERNAL projects with no author position."""
@@ -312,11 +324,11 @@ if not publications_df.empty:
     df_aggregated = publications_df.groupby(['year', 'authorship'], as_index=False).size()
     df_aggregated.rename(columns={'year': 'Year', 'size': 'Number of Publications'}, inplace=True)
     publications_chart = create_yearly_stacked_bar_chart(
-        df=df_aggregated,
+        df=df_aggregated[df_aggregated['Year'].isin(range(2019, 2026))],
         y_variable="Number of Publications",
         color_variable="authorship",
         title="Peer-reviewed publications per year",
-        dimensions=[800, 500]
+        dimensions=bar_chart_dimsensions
     )
     publications_chart.save(output_dir / f"publications_per_year.{args.format}")
     total_publications = df_aggregated['Number of Publications'].sum()
@@ -486,16 +498,17 @@ if os.path.exists(LA_surveys_file):
                                             var_name="period", value_name="score")
         replacement_values = {"average": "2019-2025", "2018 average": "2013-2018"}
         section_df_long["period"] = section_df_long["period"].replace(replacement_values)
-        section_df_long['Question'] = section_df_long['Question'].apply(lambda x: '@'.join(wrap(x, 90)))
+        section_df_long['Question'] = section_df_long['Question'].apply(lambda x: '@'.join(wrap(x, 75)))
         section_df_long = section_df_long[~section_df_long['Question'].str.startswith('The collaboration with the eScience Center')]
         num_questions = section_df_long['Question'].nunique()
         chart = create_survey_chart(
             df=section_df_long,
             x_variable='score',
             x_variable_2='period',
-            dimensions=[800, 160 * num_questions],
+            dimensions=[680, 160 * num_questions],
         )
         chart.save(output_dir / f"LA_survey_{section_name}.{args.format}")
+
 
 training_data_file = input_dir / "trainingData.csv"
 if os.path.exists(training_data_file):
@@ -516,7 +529,7 @@ if os.path.exists(training_data_file):
                                             title="Attendance per region",
                                             y_variable="Attendees",
                                             color_variable="Region",
-                                            dimensions=[800, 500])
+                                            dimensions=bar_chart_dimsensions)
     chart.save(output_dir / f"training_attendance_region_yearly.{args.format}")
 
     training_df_year_average = training_df_regional.mean(numeric_only=True, axis=0).reset_index()
@@ -589,7 +602,7 @@ if os.path.exists(software_file):
         title="Active Software Repositories",
         y_variable="Number of Repositories",
         color_variable="Type",
-        dimensions=[800, 500]
+        dimensions=bar_chart_dimsensions
     ).save(output_dir / f"software_repos.{args.format}")
 
     nlesc_initiated_df = software_df[software_df['nlesc_initiated']]
